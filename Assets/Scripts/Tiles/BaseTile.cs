@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Tile : MonoBehaviour
+public abstract class BaseTile : MonoBehaviour
 {
     [SerializeField] private Button _button;
     [SerializeField] private Sprite _sprite;
