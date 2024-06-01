@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76e0ff2557ca59d438e33d849f07e2bc, type: 3}
+  m_Name: Tile Color Style
+  m_EditorClassIdentifier: 
+  <ColorDatas>k__BackingField:
+  - <ColorName>k__BackingField: Red
+    <Color>k__BackingField: {r: 1, g: 0.35283017, b: 0.35283017, a: 1}
+  - <ColorName>k__BackingField: Green
+    <Color>k__BackingField: {r: 0.38201788, g: 0.8490566, b: 0.22748305, a: 1}
+  - <ColorName>k__BackingField: Blue
+    <Color>k__BackingField: {r: 0.3150943, g: 0.59262824, b: 1, a: 1}
+  - <ColorName>k__BackingField: Yellow
+    <Color>k__BackingField: {r: 1, g: 0.8910242, b: 0.2980392, a: 1}

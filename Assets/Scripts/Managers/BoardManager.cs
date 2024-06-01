@@ -1,39 +1,63 @@
-using System;
+using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using static TileData;
+using static ColorStyle;
 
 public class BoardManager : Singleton<BoardManager>
 {
     [Header("Settings")]
     [Range(6, 12)]
-    [SerializeField] private uint _width = 12;
+    [SerializeField] private int _width = 12;
     [Range(6, 12)]
-    [SerializeField] private uint _height = 12;
+    [SerializeField] private int _height = 12;
+
+    [field: Space]
+
+    [field: SerializeField] public uint NormalPopRequirement { get; private set; } = 3;
+    [field: SerializeField] public uint SpawnBombRequirement { get; private set; } = 6;
+    [field: SerializeField] public uint SpawnDiscoRequirement { get; private set; } = 10;
 
     [Header("References")]
     [SerializeField] private RectTransform _boardParent;
     [SerializeField] private GridLayoutGroup _gridLayout;
     [SerializeField] private Transform _tileParentRef;
-    [SerializeField] private BaseTile _tileRef;
+    [SerializeField] private ColorStyle _colorStyle;
 
     private TileData[,] _tiles;
+    private List<BaseTile> _extraSpawnTiles = new List<BaseTile>();
+
+    public ColorStyleData PreviousColorStyleData;
+
+    private int _score;
+    public int Score
+    {
+        get => _score;
+        set
+        {
+            _score = value;
+            UIManager.Instance.UpdateScore();
+        }
+    }
+
+    public int Width => _width;
+    public int Height => _height;
 
     private PoolManager _poolManager;
+    private PrefabManager _prefabManager;
 
     private void Start()
     {
         _poolManager = PoolManager.Instance;
+        _prefabManager = PrefabManager.Instance;
 
         GenerateBoard();
     }
 
     #region Board Management
 
-    private void GenerateBoard()
+    public void GenerateBoard()
     {
         ClearBoard();
 
@@ -44,7 +68,7 @@ public class BoardManager : Singleton<BoardManager>
 
         _gridLayout.constraintCount = xCount;
 
-        // Calculate grid layout size.
+        // Calculate grid layout size to match with screen.
         var totalSize = xCount * (_gridLayout.cellSize.x + _gridLayout.spacing.x);
         var boardSize = _boardParent.rect.size.x;
 
@@ -61,21 +85,18 @@ public class BoardManager : Singleton<BoardManager>
                 var _tileParent = Instantiate(_tileParentRef);
                 _tileParent.name = $"Tile ({x}, {y})";
                 _tileParent.SetParent(_boardParent);
+                _tileParent.localScale = Vector3.one;
 
-                var _tileObj = Instantiate(_tileRef);
-                _tileObj.transform.SetParent(_tileParent);
+                _tiles[x, y] = new TileData(x, y, _tileParent, null);
 
-                _tiles[x, y] = new TileData(x, y, _tileParent, _tileObj);
+                GenerateTile(_tiles[x, y]);
             }
         }
     }
 
-    private void ClearBoard()
+    public void ClearBoard()
     {
-        if (_tiles == null)
-        {
-            return;
-        }
+        if (_tiles == null) return;
 
         var xCount = _tiles.GetLength(0);
         var yCount = _tiles.GetLength(1);
@@ -85,11 +106,121 @@ public class BoardManager : Singleton<BoardManager>
             for (int y = 0; y < yCount; y++)
             {
                 var tileData = _tiles[x, y];
-                Destroy(tileData.TileParent);
+
+                if (tileData.Tile)
+                {
+                    _poolManager.Despawn(tileData.Tile);
+                }
+
+                Destroy(tileData.TileParent.gameObject);
             }
         }
 
         _tiles = null;
+    }
+
+    public void RefreshBoard()
+    {
+        if (_tiles == null) return;
+
+        var xCount = _tiles.GetLength(0);
+        var yCount = _tiles.GetLength(1);
+
+        for (int x = 0; x < xCount; x++)
+        {
+            for (int y = 0; y < yCount; y++)
+            {
+                var tileData = _tiles[x, y];
+
+                // If tile is empty, move from above tile to this tile.
+                if (!tileData.Tile)
+                {
+                    int checkY = y + 1;
+                    bool move = false;
+
+                    // Search through above tiles...
+                    while (checkY < yCount)
+                    {
+                        var aboveTile = GetTile(x, checkY);
+
+                        if (aboveTile != null)
+                        {
+                            if (aboveTile.Tile)
+                            {
+                                move = true;
+                                MoveTile(aboveTile, tileData);
+                                break;
+                            }
+
+                            checkY++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    // If there's no tile above, generate new tile instead.
+                    if (!move)
+                    {
+                        GenerateTile(tileData);
+                    }
+                }
+            }
+        }
+    }
+
+    private void GenerateTile(TileData tileDataRef)
+    {
+        BaseTile prefabRef = _prefabManager.NormalTile;
+
+        // If there's extra spawn, random chance to spawn one.
+        if (_extraSpawnTiles.Count > 0)
+        {
+            int index = Random.Range(0, _extraSpawnTiles.Count - 1);
+            prefabRef = _extraSpawnTiles[index];
+            _extraSpawnTiles.RemoveAt(index);
+        }
+
+        var tileObj = _poolManager.GetOrCreate(prefabRef) as BaseTile;
+
+        switch (tileObj)
+        {
+            case NormalTile normalTile:
+                normalTile.SetColorData(_colorStyle.GetRandomColorData());
+                break;
+
+            case DiscoTile discoTile:
+                discoTile.SetColorData(PreviousColorStyleData);
+                break;
+        }
+
+        tileDataRef.SetTile(tileObj);
+    }
+
+    public void Shuffle()
+    {
+        if (_tiles == null) return;
+
+        var xCount = _tiles.GetLength(0);
+        var yCount = _tiles.GetLength(1);
+
+        for (int x = 0; x < xCount; x++)
+        {
+            for (int y = 0; y < yCount; y++)
+            {
+                var tile = _tiles[x, y];
+                var tileObj = tile.Tile;
+
+                int randomX = Random.Range(0, xCount - 1);
+                int randomY = Random.Range(0, yCount - 1);
+                var randomTile = _tiles[randomX, randomY];
+                var randomTileObj = randomTile.Tile;
+
+                tile.SetTile(randomTileObj);
+                randomTile.SetTile(tileObj);
+            }
+        }
     }
 
     #endregion
@@ -100,27 +231,72 @@ public class BoardManager : Singleton<BoardManager>
     {
         if (x < 0 || x >= _width || y < 0 || y >= _height)
         {
-            return new TileData();
+            return null;
         }
 
         return _tiles[x, y];
     }
 
-    /*
-    public Tile[] GetNeighborTiles()
+    public HashSet<TileData> GetNeighborTiles(int x, int y)
     {
+        var neighborTiles = new HashSet<TileData>();
 
+        var topTile = GetTile(x, y + 1);
+        var bottomTile = GetTile(x, y - 1);
+        var leftTile = GetTile(x - 1, y);
+        var rightTile = GetTile(x + 1, y);
+
+        if (topTile != null)
+        {
+            neighborTiles.Add(topTile);
+        }
+
+        if (bottomTile != null)
+        {
+            neighborTiles.Add(bottomTile);
+        }
+
+        if (leftTile != null)
+        {
+            neighborTiles.Add(leftTile);
+        }
+
+        if (rightTile != null)
+        {
+            neighborTiles.Add(rightTile);
+        }
+
+        return neighborTiles;
     }
-    */
+
+    public TileData[,] GetAllTiles()
+    {
+        return _tiles;
+    }
+
+    private void MoveTile(TileData fromData, TileData toData)
+    {
+        if (toData.Tile) return;
+
+        if (fromData.Tile)
+        {
+            toData.SetTile(fromData.Tile);
+            fromData.ClearTile(false);
+        }
+    }
 
     #endregion
+
+    public void AddExtraSpawn(BaseTile tile)
+    {
+        _extraSpawnTiles.Add(tile);
+    }
 }
 
-[Serializable]
-public struct TileData
+public class TileData
 {
-    public readonly int _x;
-    public readonly int _y;
+    public readonly int X;
+    public readonly int Y;
 
     public readonly Transform TileParent;
 
@@ -128,8 +304,8 @@ public struct TileData
 
     public TileData(int x, int y, Transform tileParent, BaseTile tile)
     {
-        _x = x;
-        _y = y;
+        X = x;
+        Y = y;
 
         TileParent = tileParent;
         Tile = tile;
@@ -137,10 +313,33 @@ public struct TileData
 
     public void SetTile(BaseTile tile)
     {
+        if (!tile) return;
+
         Tile = tile;
-        
+        Tile.SetPosition(X, Y);
+
+        bool isNew = !Tile.transform.parent;
+
         Tile.transform.SetParent(TileParent);
-        Tile.transform.localPosition = Vector3.zero;
         Tile.transform.localScale = Vector3.one;
+
+        Tile.GetComponent<RectTransform>().sizeDelta = Vector2.zero;
+
+        if (isNew)
+        {
+            Tile.transform.localPosition = Vector2.up * 1000f;
+        }
+
+        Tile.transform.DOLocalMove(Vector2.zero, 0.25f);
+    }
+
+    public void ClearTile(bool despawn = true)
+    {
+        if (Tile && despawn)
+        {
+            PoolManager.Instance.Despawn(Tile);
+        }
+
+        Tile = null;
     }
 }
