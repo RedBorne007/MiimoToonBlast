@@ -62,9 +62,4 @@ public sealed class DiscoTile : BaseTile, IColorable
         ColorStyleData = colorData;
         _colorRenderer.color = colorData.Color;
     }
-
-    public bool IsSameColor(ColorStyleData colorData)
-    {
-        return ColorStyleData.ColorName == colorData.ColorName;
-    }
 }

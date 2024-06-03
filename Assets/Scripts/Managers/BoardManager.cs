@@ -321,6 +321,7 @@ public class TileData
         bool isNew = !Tile.transform.parent;
 
         Tile.transform.SetParent(TileParent);
+        Tile.transform.SetAsFirstSibling();
         Tile.transform.localScale = Vector3.one;
 
         Tile.GetComponent<RectTransform>().sizeDelta = Vector2.zero;

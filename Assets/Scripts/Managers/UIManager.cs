@@ -1,4 +1,3 @@
-using Coffee.UIExtensions;
 using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,8 +13,7 @@ public class UIManager : Singleton<UIManager>
 
     [field: SerializeField] public Transform _particleParent { get; private set; }
 
-    private float _previousScore;
-    private Sequence _scoreTween;
+    private Tween _scoreTween;
 
     private BoardManager _boardManager;
 
@@ -40,23 +38,14 @@ public class UIManager : Singleton<UIManager>
 
     public void UpdateScore()
     {
-        if (_scoreTween != null && !_scoreTween.IsComplete())
+        _scoreText.transform.localScale = Vector3.one;
+
+        if (_scoreTween != null && _scoreTween.IsComplete())
         {
-            _previousScore = _boardManager.Score;
             _scoreTween.Kill();
         }
 
-        _scoreTween = DOTween.Sequence();
-
-        float value = _previousScore;
-        _scoreTween.Join(_scoreText.transform.DOPunchScale(Vector3.one * 0.25f, 0.25f)).Join(DOTween.To(() => value, x =>
-        {
-            value = x;
-            _scoreText.text = x.ToString("F0");
-        },
-        _boardManager.Score, 0.5f).OnComplete(() =>
-        {
-            _previousScore = value;
-        }));
+        _scoreTween = _scoreText.transform.DOPunchScale(Vector3.one * 0.25f, 0.25f);
+        _scoreText.text = _boardManager.Score.ToString();
     }
 }
