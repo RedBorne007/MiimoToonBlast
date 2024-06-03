@@ -9,12 +9,16 @@ public sealed class BombTile : BaseTile
 
         foreach (var tile in allBombTiles)
         {
-            tile?.Pop();
+            if (tile)
+            {
+                tile?.Pop();
+                BoardManager.GameEventData.RowChanges.Add(tile.GetTileData().X);
+            }
         }
 
         BoardManager.Score += allBombTiles.Count;
 
-        BoardManager.GetTile(X, Y).ClearTile();
+        GetTileData().ClearTile();
         BoardManager.RefreshBoard();
     }
 
@@ -39,6 +43,7 @@ public sealed class BombTile : BaseTile
         int width = BoardManager.Width;
         int height = BoardManager.Height;
 
+        // Scan in X axis.
         while (x < width)
         {
             var tile = BoardManager.GetTile(x, Y);
@@ -51,6 +56,7 @@ public sealed class BombTile : BaseTile
             x++;
         }
 
+        // Scan in Y axis.
         while (y < height)
         {
             var tile = BoardManager.GetTile(X, y);

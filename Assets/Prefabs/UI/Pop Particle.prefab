@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2097161989737721051}
   - component: {fileID: 5638965888512138709}
   m_Layer: 5
-  m_Name: Break Particle
+  m_Name: Pop Particle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

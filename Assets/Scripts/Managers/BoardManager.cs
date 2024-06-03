@@ -26,9 +26,6 @@ public class BoardManager : Singleton<BoardManager>
     [SerializeField] private ColorStyle _colorStyle;
 
     private TileData[,] _tiles;
-    private List<BaseTile> _extraSpawnTiles = new List<BaseTile>();
-
-    public ColorStyleData PreviousColorStyleData;
 
     private int _score;
     public int Score
@@ -44,6 +41,8 @@ public class BoardManager : Singleton<BoardManager>
     public int Width => _width;
     public int Height => _height;
 
+    public GameEventData GameEventData;
+
     private PoolManager _poolManager;
     private PrefabManager _prefabManager;
 
@@ -57,11 +56,15 @@ public class BoardManager : Singleton<BoardManager>
 
     #region Board Management
 
+    /// <summary>
+    /// Generate the board.
+    /// </summary>
     public void GenerateBoard()
     {
         ClearBoard();
 
         _tiles = new TileData[_width, _height];
+        GameEventData = new GameEventData(new HashSet<int>(), new ColorStyleData(), new List<BaseTile>());
 
         var xCount = _tiles.GetLength(0);
         var yCount = _tiles.GetLength(1);
@@ -94,6 +97,9 @@ public class BoardManager : Singleton<BoardManager>
         }
     }
 
+    /// <summary>
+    /// Clear the entire board.
+    /// </summary>
     public void ClearBoard()
     {
         if (_tiles == null) return;
@@ -119,6 +125,83 @@ public class BoardManager : Singleton<BoardManager>
         _tiles = null;
     }
 
+    /// <summary>
+    /// Refresh the board when there's make changes in the board.
+    /// </summary>
+    // NEW ALGORITHM (Loop X, and check each row one by one)
+    public void RefreshBoard()
+    {
+        if (_tiles == null) return;
+
+        var xCount = _tiles.GetLength(0);
+        var yCount = _tiles.GetLength(1);
+
+        // Check each row instead of loop in array.
+        for (int x = 0; x < xCount; x++)
+        {
+            if (!GameEventData.RowChanges.Contains(x))
+            {
+                continue;
+            }
+
+            int currentY = 0;
+            int checkY = currentY + 1;
+
+            var currentTile = _tiles[x, currentY];
+            var aboveTile = GetTile(x, checkY);
+
+            // Search through above tiles...
+            while (currentY < yCount)
+            {
+                currentTile = _tiles[x, currentY];
+
+                // If that tile is existed, no need to make changes, check next one.
+                if (currentTile.Tile)
+                {
+                    currentY++;
+                    continue;
+                }
+
+                checkY = currentY + 1;
+
+                while (checkY <= yCount)
+                {
+                    aboveTile = GetTile(x, checkY);
+
+                    if (aboveTile != null)
+                    {
+                        // If found tile above, move to current tile and check next one.
+                        if (aboveTile.Tile)
+                        {
+                            MoveTile(aboveTile, currentTile);
+                            break;
+                        }
+                        else
+                        {
+                            checkY++;
+                        }
+                    }
+                    else
+                    {
+                        // If it's null, it means check through the top and no tile detected,
+                        // Generate new tile and check next one.
+                        GenerateTile(currentTile);
+                        break;
+                    }
+                }
+
+                currentY++;
+            }
+        }
+
+        GameEventData.RowChanges.Clear();
+        GameEventData.ColorStyleData = new ColorStyleData();
+    }
+
+    #region Old Algorithm
+
+    // OLD ALGORITHM (Loop though array in X and Y and check one by one)
+    /*
     public void RefreshBoard()
     {
         if (_tiles == null) return;
@@ -169,17 +252,24 @@ public class BoardManager : Singleton<BoardManager>
             }
         }
     }
+    */
 
+    #endregion
+
+    /// <summary>
+    /// Generate new tile to tile data.
+    /// </summary>
+    /// <param name="tileDataRef"></param>
     private void GenerateTile(TileData tileDataRef)
     {
         BaseTile prefabRef = _prefabManager.NormalTile;
 
         // If there's extra spawn, random chance to spawn one.
-        if (_extraSpawnTiles.Count > 0)
+        if (GameEventData.ExtraSpawns.Count > 0)
         {
-            int index = Random.Range(0, _extraSpawnTiles.Count - 1);
-            prefabRef = _extraSpawnTiles[index];
-            _extraSpawnTiles.RemoveAt(index);
+            int index = Random.Range(0, GameEventData.ExtraSpawns.Count - 1);
+            prefabRef = GameEventData.ExtraSpawns[index];
+            GameEventData.ExtraSpawns.RemoveAt(index);
         }
 
         var tileObj = _poolManager.GetOrCreate(prefabRef) as BaseTile;
@@ -191,13 +281,16 @@ public class BoardManager : Singleton<BoardManager>
                 break;
 
             case DiscoTile discoTile:
-                discoTile.SetColorData(PreviousColorStyleData);
+                discoTile.SetColorData(GameEventData.ColorStyleData);
                 break;
         }
 
         tileDataRef.SetTile(tileObj);
     }
 
+    /// <summary>
+    /// Shuffle all tiles in the board.
+    /// </summary>
     public void Shuffle()
     {
         if (_tiles == null) return;
@@ -286,11 +379,6 @@ public class BoardManager : Singleton<BoardManager>
     }
 
     #endregion
-
-    public void AddExtraSpawn(BaseTile tile)
-    {
-        _extraSpawnTiles.Add(tile);
-    }
 }
 
 public class TileData
@@ -326,6 +414,7 @@ public class TileData
 
         Tile.GetComponent<RectTransform>().sizeDelta = Vector2.zero;
 
+        // If it's new generated object, move from above.
         if (isNew)
         {
             Tile.transform.localPosition = Vector2.up * 1000f;
@@ -342,5 +431,22 @@ public class TileData
         }
 
         Tile = null;
+    }
+}
+
+/// <summary>
+/// This is temporary data event when player pop tiles.
+/// </summary>
+public struct GameEventData
+{
+    public HashSet<int> RowChanges;
+    public ColorStyleData ColorStyleData;
+    public List<BaseTile> ExtraSpawns;
+
+    public GameEventData(HashSet<int> rowChanges, ColorStyleData colorStyleData, List<BaseTile> extraSpawns)
+    {
+        RowChanges = rowChanges;
+        ColorStyleData = colorStyleData;
+        ExtraSpawns = extraSpawns;
     }
 }

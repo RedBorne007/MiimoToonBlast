@@ -38,14 +38,17 @@ public class UIManager : Singleton<UIManager>
 
     public void UpdateScore()
     {
-        _scoreText.transform.localScale = Vector3.one;
-
         if (_scoreTween != null && _scoreTween.IsComplete())
         {
             _scoreTween.Kill();
+            _scoreText.transform.localScale = Vector3.one;
         }
 
-        _scoreTween = _scoreText.transform.DOPunchScale(Vector3.one * 0.25f, 0.25f);
+        _scoreTween = _scoreText.transform.DOPunchScale(Vector3.one * 0.25f, 0.25f).OnComplete(() =>
+        {
+            _scoreText.transform.localScale = Vector3.one;
+        });
+
         _scoreText.text = _boardManager.Score.ToString();
     }
 }

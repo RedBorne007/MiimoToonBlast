@@ -166,8 +166,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90515d93bb1135245a7fc1a7af6f9aa1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _width: 6
-  _height: 6
+  _width: 8
+  _height: 8
   <NormalPopRequirement>k__BackingField: 3
   <SpawnBombRequirement>k__BackingField: 6
   <SpawnDiscoRequirement>k__BackingField: 10
@@ -175,9 +175,6 @@ MonoBehaviour:
   _gridLayout: {fileID: 1592509873}
   _tileParentRef: {fileID: 5320145078647876759, guid: 7bb3904f8e75f5441b9da10e4883e600, type: 3}
   _colorStyle: {fileID: 11400000, guid: e925258194c7c4e4da7d10ccd806f6ba, type: 2}
-  PreviousColorStyleData:
-    <ColorName>k__BackingField: 
-    <Color>k__BackingField: {r: 0, g: 0, b: 0, a: 0}
 --- !u!1 &333477394
 GameObject:
   m_ObjectHideFlags: 0
@@ -213,7 +210,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 0.000030517578, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 290}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &333477396
@@ -1070,7 +1067,7 @@ MonoBehaviour:
   <NormalTile>k__BackingField: {fileID: 3255164515402188252, guid: c80421f1bbbb2c5438c05fdeb75fe3e5, type: 3}
   <BombTile>k__BackingField: {fileID: 2245612997224461877, guid: fa4bd8712dc29144c9f41cdbe796b06d, type: 3}
   <DiscoTile>k__BackingField: {fileID: 476695104364350751, guid: c0831c410cb40704c86cc3972dd8cfd1, type: 3}
-  <BreakParticle>k__BackingField: {fileID: 5638965888512138709, guid: ba0d60cac607ff446a1484e7d7ed840c, type: 3}
+  <PopParticle>k__BackingField: {fileID: 5638965888512138709, guid: ba0d60cac607ff446a1484e7d7ed840c, type: 3}
 --- !u!1 &2071190216
 GameObject:
   m_ObjectHideFlags: 0

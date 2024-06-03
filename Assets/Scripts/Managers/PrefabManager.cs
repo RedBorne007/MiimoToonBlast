@@ -10,5 +10,5 @@ public class PrefabManager : Singleton<PrefabManager>
 
     [field: Space]
 
-    [field: SerializeField] public ParticlePool BreakParticle { get; private set; }
+    [field: SerializeField] public ParticlePool PopParticle { get; private set; }
 }

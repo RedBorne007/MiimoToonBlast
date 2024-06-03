@@ -18,6 +18,7 @@ public sealed class NormalTile : BaseTile, IColorable
         {
             foreach (var tile in cacheNeighborTiles)
             {
+                BoardManager.GameEventData.RowChanges.Add(tile.GetTileData().X);
                 tile.Pop();
             }
 
@@ -26,14 +27,14 @@ public sealed class NormalTile : BaseTile, IColorable
             // If reach bomb spawn requirement, spawn one on next refill.
             if (popCount >= BoardManager.SpawnBombRequirement)
             {
-                BoardManager.AddExtraSpawn(PrefabManager.Instance.BombTile);
+                BoardManager.GameEventData.ExtraSpawns.Add(PrefabManager.BombTile);
             }
 
             // If reach disco spawn requirement, spawn one on next refill.
             if (popCount >= BoardManager.SpawnDiscoRequirement)
             {
-                BoardManager.PreviousColorStyleData = ColorStyleData;
-                BoardManager.AddExtraSpawn(PrefabManager.Instance.DiscoTile);
+                BoardManager.GameEventData.ColorStyleData = ColorStyleData;
+                BoardManager.GameEventData.ExtraSpawns.Add(PrefabManager.DiscoTile);
             }
 
             BoardManager.Score += popCount;
@@ -51,8 +52,9 @@ public sealed class NormalTile : BaseTile, IColorable
     private HashSet<BaseTile> FindAllNearbyMatch()
     {
         cacheNeighborTiles = new HashSet<BaseTile>() { this };
-        var searchTiles = new HashSet<TileData> { BoardManager.GetTile(X, Y) };
+        var searchTiles = new HashSet<TileData> { GetTileData() };
 
+        // Find neighbor tiles until there's no more tile to search.
         while (searchTiles.Count > 0)
         {
             var cachSearchTiles = new HashSet<TileData>(searchTiles);

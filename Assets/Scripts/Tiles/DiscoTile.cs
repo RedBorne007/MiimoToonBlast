@@ -16,12 +16,16 @@ public sealed class DiscoTile : BaseTile, IColorable
 
         foreach (var tile in allColorTiles)
         {
-            tile?.Pop();
+            if (tile)
+            {
+                tile?.Pop();
+                BoardManager.GameEventData.RowChanges.Add(tile.GetTileData().X);
+            }
         }
 
         BoardManager.Score += allColorTiles.Count;
 
-        BoardManager.GetTile(X, Y).ClearTile();
+        GetTileData().ClearTile();
         BoardManager.RefreshBoard();
     }
 
@@ -42,6 +46,7 @@ public sealed class DiscoTile : BaseTile, IColorable
         var colorTiles = new HashSet<BaseTile>();
         var allTiles = BoardManager.GetAllTiles();
 
+        // Search all tiles with same color.
         foreach (var tileData in allTiles)
         {
             if (!tileData.Tile) continue;
